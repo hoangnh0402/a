@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ô Ăn Quan - Mandarin Square Capturing</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-paper: #f4e4c1;
+            --board-brown: #8B4513;
+            --board-light: #CD853F;
+            --dan-stone: #2F4F4F;
+            --quan-stone: #DAA520;
+            --text-dark: #3d2914;
+            --accent-red: #8B0000;
+            --shadow: rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Serif', serif;
+            background: var(--bg-paper);
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(139, 69, 19, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(205, 133, 63, 0.05) 0%, transparent 50%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: var(--text-dark);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            color: var(--board-brown);
+            text-shadow: 2px 2px 4px var(--shadow);
+            margin-bottom: 10px;
+        }
+
+        .turn-indicator {
+            font-size: 1.2rem;
+            padding: 8px 20px;
+            background: linear-gradient(135deg, var(--board-brown), var(--board-light));
+            color: var(--bg-paper);
+            border-radius: 20px;
+            display: inline-block;
+            box-shadow: 0 3px 10px var(--shadow);
+        }
+
+        .scores-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 20px;
+            gap: 20px;
+        }
+
+        .score-box {
+            flex: 1;
+            background: linear-gradient(145deg, #fff, var(--bg-paper));
+            border: 3px solid var(--board-brown);
+            border-radius: 15px;
+            padding: 15px 25px;
+            text-align: center;
+            box-shadow: 0 5px 15px var(--shadow);
+        }
+
+        .score-box.active {
+            border-color: var(--quan-stone);
+            box-shadow: 0 0 20px rgba(218, 165, 32, 0.5);
+        }
+
+        .score-box h2 {
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+            color: var(--board-brown);
+        }
+
+        .score-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--accent-red);
+        }
+
+        .game-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        #gameCanvas {
+            border-radius: 20px;
+            box-shadow: 0 10px 30px var(--shadow);
+            cursor: pointer;
+        }
+
+        .direction-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            border-radius: 20px;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .direction-overlay.show {
+            display: flex;
+        }
+
+        .direction-overlay p {
+            color: white;
+            font-size: 1.3rem;
+        }
+
+        .direction-buttons {
+            display: flex;
+            gap: 30px;
+        }
+
+        .dir-btn {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-family: 'Noto Serif', serif;
+            background: linear-gradient(135deg, var(--board-light), var(--board-brown));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px var(--shadow);
+        }
+
+        .dir-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px var(--shadow);
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .control-btn {
+            padding: 12px 30px;
+            font-size: 1rem;
+            font-family: 'Noto Serif', serif;
+            background: var(--board-brown);
+            color: var(--bg-paper);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 10px var(--shadow);
+        }
+
+        .control-btn:hover {
+            background: var(--board-light);
+            transform: translateY(-2px);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-paper);
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 20px 50px var(--shadow);
+        }
+
+        .modal-content h2 {
+            color: var(--board-brown);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .modal-content h3 {
+            color: var(--accent-red);
+            margin: 15px 0 10px;
+        }
+
+        .modal-content p, .modal-content li {
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .modal-content ul {
+            padding-left: 20px;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 1.5rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--board-brown);
+        }
+
+        /* Game Over Modal */
+        .game-over-content {
+            text-align: center;
+        }
+
+        .game-over-content h2 {
+            font-size: 2rem;
+            margin-bottom: 30px;
+        }
+
+        .final-scores {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 30px;
+        }
+
+        .final-score {
+            padding: 20px 30px;
+            background: linear-gradient(145deg, #fff, var(--bg-paper));
+            border: 3px solid var(--board-brown);
+            border-radius: 15px;
+        }
+
+        .final-score.winner {
+            border-color: var(--quan-stone);
+            background: linear-gradient(145deg, #fff9e6, #fff3cc);
+        }
+
+        .final-score h3 {
+            margin-bottom: 10px;
+        }
+
+        .final-score .score {
+            font-size: 2.5rem;
+            color: var(--accent-red);
+            font-weight: bold;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes captureGlow {
+            0% { box-shadow: 0 0 0 rgba(218, 165, 32, 0); }
+            50% { box-shadow: 0 0 30px rgba(218, 165, 32, 0.8); }
+            100% { box-shadow: 0 0 0 rgba(218, 165, 32, 0); }
+        }
+
+        .score-box.capturing {
+            animation: captureGlow 0.5s ease;
+        }
+
+        /* Responsive */
+        @media (max-width: 850px) {
+            h1 { font-size: 1.8rem; }
+            .scores-container { flex-direction: column; }
+            .score-box { padding: 10px 15px; }
+        }
+
+        @media (max-width: 500px) {
+            h1 { font-size: 1.5rem; }
+            .dir-btn { padding: 10px 25px; font-size: 1rem; }
+            .control-btn { padding: 10px 20px; font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🎋 Ô Ăn Quan 🎋</h1>
+        <div class="turn-indicator" id="turnIndicator">Lượt: Người chơi 1</div>
+    </header>
+
+    <div class="scores-container">
+        <div class="score-box active" id="score1Box">
+            <h2>👤 Người chơi 1</h2>
+            <div class="score-value" id="score1">0</div>
+        </div>
+        <div class="score-box" id="score2Box">
+            <h2>👤 Người chơi 2</h2>
+            <div class="score-value" id="score2">0</div>
+        </div>
+    </div>
+
+    <div class="game-container">
+        <canvas id="gameCanvas" width="800" height="350"></canvas>
+        <div class="direction-overlay" id="directionOverlay">
+            <p>Chọn hướng đi:</p>
+            <div class="direction-buttons">
+                <button class="dir-btn" id="leftBtn">⬅️ Trái</button>
+                <button class="dir-btn" id="rightBtn">Phải ➡️</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="control-btn" id="newGameBtn">🔄 Ván mới</button>
+        <button class="control-btn" id="rulesBtn">📖 Luật chơi</button>
+    </div>
+
+    <!-- Rules Modal -->
+    <div class="modal" id="rulesModal">
+        <div class="modal-content">
+            <button class="close-btn" id="closeRules">&times;</button>
+            <h2>📜 Luật chơi Ô Ăn Quan</h2>
+            
+            <h3>🎯 Mục tiêu</h3>
+            <p>Thu được nhiều điểm nhất khi trò chơi kết thúc.</p>
+            
+            <h3>🎲 Bàn cờ</h3>
+            <ul>
+                <li><strong>10 ô vuông (Ruộng Dân):</strong> Mỗi bên 5 ô, mỗi ô có 5 quân Dân (1 điểm/quân)</li>
+                <li><strong>2 ô bán nguyệt (Nhà Quan):</strong> Hai đầu bàn, mỗi ô có 1 quân Quan (10 điểm)</li>
+            </ul>
+            
+            <h3>🎮 Cách chơi</h3>
+            <ul>
+                <li>Chọn 1 ô vuông bên mình (phải có quân)</li>
+                <li>Chọn hướng đi (trái hoặc phải)</li>
+                <li><strong>Rải quân:</strong> Lấy tất cả quân trong ô, rải mỗi ô 1 quân theo hướng đã chọn</li>
+                <li>Sau khi rải hết:
+                    <ul>
+                        <li>Ô tiếp theo có quân → Lấy lên và tiếp tục rải</li>
+                        <li>Ô tiếp theo trống + ô sau có quân → Ăn quân ô đó</li>
+                        <li>Tiếp tục ăn nếu lặp lại điều kiện trên</li>
+                    </ul>
+                </li>
+            </ul>
+            
+            <h3>🛑 Dừng lượt khi</h3>
+            <ul>
+                <li>Gặp 2 ô trống liên tiếp</li>
+                <li>Gặp ô Quan (dù có hay không có quân)</li>
+            </ul>
+            
+            <h3>⭐ Luật đặc biệt</h3>
+            <ul>
+                <li><strong>Vay quân:</strong> Nếu 5 ô của bạn trống hết, vay 5 điểm để rải mỗi ô 1 quân</li>
+                <li><strong>Kết thúc:</strong> Khi cả 2 ô Quan đều bị ăn, mỗi người thu quân còn lại trên bàn về phía mình</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div class="modal" id="gameOverModal">
+        <div class="modal-content game-over-content">
+            <h2 id="gameOverTitle">🏆 Kết thúc ván đấu!</h2>
+            <div class="final-scores">
+                <div class="final-score" id="finalScore1">
+                    <h3>Người chơi 1</h3>
+                    <div class="score" id="finalScore1Value">0</div>
+                </div>
+                <div class="final-score" id="finalScore2">
+                    <h3>Người chơi 2</h3>
+                    <div class="score" id="finalScore2Value">0</div>
+                </div>
+            </div>
+            <button class="control-btn" id="playAgainBtn">🔄 Chơi lại</button>
+        </div>
+    </div>
+
+    <script>
+        // ============ GAME STATE ============
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Board: indices 0-4 = P1's squares, 5 = Left Quan, 6-10 = P2's squares, 11 = Right Quan
+        let board = [];
+        let isQuan = [false, false, false, false, false, true, false, false, false, false, false, true];
+        let scores = [0, 0];
+        let currentPlayer = 0; // 0 = Player 1, 1 = Player 2
+        let selectedCell = -1;
+        let isAnimating = false;
+        let animatingStone = null;
+        let highlightedCells = [];
+
+        // Cell positions for rendering
+        const cellPositions = [];
+        const cellWidth = 100;
+        const cellHeight = 120;
+        const quanRadius = 70;
+        const boardPadding = 50;
+
+        // ============ INITIALIZATION ============
+        function initGame() {
+            board = [5, 5, 5, 5, 5, 10, 5, 5, 5, 5, 5, 10];
+            scores = [0, 0];
+            currentPlayer = 0;
+            selectedCell = -1;
+            isAnimating = false;
+            animatingStone = null;
+            highlightedCells = [];
+            
+            calculateCellPositions();
+            updateUI();
+            render();
+        }
+
+        function calculateCellPositions() {
+            cellPositions.length = 0;
+            const startX = boardPadding + quanRadius + 20;
+            const boardWidth = canvas.width - 2 * boardPadding;
+            
+            // Player 1's squares (bottom row, 0-4) - left to right
+            for (let i = 0; i < 5; i++) {
+                cellPositions.push({
+                    x: startX + i * cellWidth + cellWidth / 2,
+                    y: canvas.height - boardPadding - cellHeight / 2,
+                    width: cellWidth,
+                    height: cellHeight,
+                    isQuan: false
+                });
+            }
+            
+            // Left Quan (index 5)
+            cellPositions.push({
+                x: boardPadding + quanRadius,
+                y: canvas.height / 2,
+                radius: quanRadius,
+                isQuan: true
+            });
+            
+            // Player 2's squares (top row, 6-10) - right to left for visual consistency
+            for (let i = 4; i >= 0; i--) {
+                cellPositions.push({
+                    x: startX + i * cellWidth + cellWidth / 2,
+                    y: boardPadding + cellHeight / 2,
+                    width: cellWidth,
+                    height: cellHeight,
+                    isQuan: false
+                });
+            }
+            
+            // Right Quan (index 11)
+            cellPositions.push({
+                x: canvas.width - boardPadding - quanRadius,
+                y: canvas.height / 2,
+                radius: quanRadius,
+                isQuan: true
+            });
+        }
+
+        // ============ RENDERING ============
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBoard();
+            drawCells();
+            drawStones();
+            if (animatingStone) {
+                drawAnimatingStone();
+            }
+        }
+
+        function drawBoard() {
+            // Main board background
+            ctx.fillStyle = '#654321';
+            ctx.strokeStyle = '#3d2914';
+            ctx.lineWidth = 4;
+            
+            // Draw elongated octagon shape for the board
+            const padding = 20;
+            ctx.beginPath();
+            ctx.roundRect(padding, padding, canvas.width - 2 * padding, canvas.height - 2 * padding, 30);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Inner decorative border
+            ctx.strokeStyle = '#CD853F';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.roundRect(padding + 10, padding + 10, canvas.width - 2 * padding - 20, canvas.height - 2 * padding - 20, 25);
+            ctx.stroke();
+            
+            // Folk pattern decorations
+            drawFolkPatterns();
+        }
+
+        function drawFolkPatterns() {
+            ctx.strokeStyle = 'rgba(205, 133, 63, 0.3)';
+            ctx.lineWidth = 1;
+            
+            // Simple geometric patterns at corners
+            const corners = [
+                { x: 40, y: 40 },
+                { x: canvas.width - 40, y: 40 },
+                { x: 40, y: canvas.height - 40 },
+                { x: canvas.width - 40, y: canvas.height - 40 }
+            ];
+            
+            corners.forEach(corner => {
+                ctx.beginPath();
+                for (let i = 0; i < 3; i++) {
+                    ctx.arc(corner.x, corner.y, 10 + i * 5, 0, Math.PI * 2);
+                }
+                ctx.stroke();
+            });
+        }
+
+        function drawCells() {
+            cellPositions.forEach((cell, index) => {
+                const isHighlighted = highlightedCells.includes(index);
+                const isSelectable = !isAnimating && !isQuan[index] && isPlayerCell(index, currentPlayer) && board[index] > 0;
+                
+                if (cell.isQuan) {
+                    drawQuanCell(cell, index, isHighlighted);
+                } else {
+                    drawSquareCell(cell, index, isHighlighted, isSelectable);
+                }
+            });
+        }
+
+        function drawSquareCell(cell, index, isHighlighted, isSelectable) {
+            const x = cell.x - cell.width / 2 + 5;
+            const y = cell.y - cell.height / 2 + 5;
+            const w = cell.width - 10;
+            const h = cell.height - 10;
+            
+            // Cell background
+            ctx.fillStyle = isHighlighted ? '#FFD700' : (isSelectable ? '#8B6914' : '#5a3d1a');
+            ctx.strokeStyle = '#3d2914';
+            ctx.lineWidth = 2;
+            
+            ctx.beginPath();
+            ctx.roundRect(x, y, w, h, 8);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Inner border
+            ctx.strokeStyle = isSelectable ? '#DAA520' : '#7a5a3a';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.roundRect(x + 3, y + 3, w - 6, h - 6, 5);
+            ctx.stroke();
+            
+            // Cell number
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.font = '12px "Noto Serif"';
+            ctx.textAlign = 'center';
+            ctx.fillText(board[index], cell.x, cell.y + cell.height / 2 - 15);
+        }
+
+        function drawQuanCell(cell, index, isHighlighted) {
+            // Outer circle
+            ctx.fillStyle = isHighlighted ? '#FFD700' : '#4a2d0a';
+            ctx.strokeStyle = '#3d2914';
+            ctx.lineWidth = 3;
+            
+            ctx.beginPath();
+            ctx.arc(cell.x, cell.y, cell.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Inner decorative circle
+            ctx.strokeStyle = '#CD853F';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(cell.x, cell.y, cell.radius - 8, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Quan label
+            ctx.fillStyle = '#DAA520';
+            ctx.font = 'bold 16px "Noto Serif"';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('QUAN', cell.x, cell.y + cell.radius - 20);
+            
+            // Stone count
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.font = '14px "Noto Serif"';
+            ctx.fillText(board[index], cell.x, cell.y + cell.radius - 5);
+        }
+
+        function drawStones() {
+            cellPositions.forEach((cell, index) => {
+                const count = board[index];
+                if (count <= 0) return;
+                
+                if (isQuan[index]) {
+                    drawQuanStones(cell, count);
+                } else {
+                    drawDanStones(cell, count);
+                }
+            });
+        }
+
+        function drawDanStones(cell, count) {
+            const stoneRadius = 8;
+            const maxVisible = Math.min(count, 15);
+            
+            // Arrange stones in a nice pattern
+            const positions = getStonePositions(cell.x, cell.y - 10, maxVisible, stoneRadius, cell.width - 30);
+            
+            positions.forEach((pos, i) => {
+                drawStone(pos.x, pos.y, stoneRadius, false);
+            });
+            
+            // Show count if more than visible
+            if (count > maxVisible) {
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 14px "Noto Serif"';
+                ctx.textAlign = 'center';
+                ctx.fillText('+' + (count - maxVisible), cell.x, cell.y + cell.height / 2 - 30);
+            }
+        }
+
+        function drawQuanStones(cell, count) {
+            // Draw the Quan stone (large gold stone) if value >= 10
+            if (count >= 10) {
+                drawStone(cell.x, cell.y - 15, 20, true);
+                count -= 10;
+            }
+            
+            // Draw remaining Dân stones
+            if (count > 0) {
+                const maxVisible = Math.min(count, 10);
+                const positions = getStonePositions(cell.x, cell.y + 15, maxVisible, 7, cell.radius * 1.5);
+                positions.forEach(pos => {
+                    drawStone(pos.x, pos.y, 7, false);
+                });
+            }
+        }
+
+        function getStonePositions(centerX, centerY, count, radius, maxWidth) {
+            const positions = [];
+            const spacing = Math.min(radius * 2.2, maxWidth / Math.max(count, 1));
+            
+            if (count <= 5) {
+                // Single row
+                const startX = centerX - (count - 1) * spacing / 2;
+                for (let i = 0; i < count; i++) {
+                    positions.push({ x: startX + i * spacing, y: centerY });
+                }
+            } else {
+                // Multiple rows
+                const rows = Math.ceil(count / 5);
+                let remaining = count;
+                for (let row = 0; row < rows; row++) {
+                    const inRow = Math.min(remaining, 5);
+                    const startX = centerX - (inRow - 1) * spacing / 2;
+                    for (let i = 0; i < inRow; i++) {
+                        positions.push({
+                            x: startX + i * spacing,
+                            y: centerY + (row - (rows - 1) / 2) * (radius * 2.2)
+                        });
+                    }
+                    remaining -= inRow;
+                }
+            }
+            
+            return positions;
+        }
+
+        function drawStone(x, y, radius, isQuan) {
+            // Shadow
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+            ctx.beginPath();
+            ctx.ellipse(x + 2, y + 3, radius, radius * 0.6, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Stone body
+            const gradient = ctx.createRadialGradient(x - radius / 3, y - radius / 3, 0, x, y, radius);
+            if (isQuan) {
+                gradient.addColorStop(0, '#FFD700');
+                gradient.addColorStop(0.5, '#DAA520');
+                gradient.addColorStop(1, '#B8860B');
+            } else {
+                gradient.addColorStop(0, '#5a7a7a');
+                gradient.addColorStop(0.5, '#2F4F4F');
+                gradient.addColorStop(1, '#1a2f2f');
+            }
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Highlight
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath();
+            ctx.ellipse(x - radius / 3, y - radius / 3, radius / 3, radius / 4, -Math.PI / 4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawAnimatingStone() {
+            if (!animatingStone) return;
+            drawStone(animatingStone.x, animatingStone.y, 10, animatingStone.isQuan);
+        }
+
+        // ============ GAME LOGIC ============
+        function isPlayerCell(index, player) {
+            if (player === 0) return index >= 0 && index <= 4;
+            return index >= 6 && index <= 10;
+        }
+
+        function getPlayerCells(player) {
+            return player === 0 ? [0, 1, 2, 3, 4] : [6, 7, 8, 9, 10];
+        }
+
+        function nextCell(index, direction) {
+            // direction: 1 = clockwise (right), -1 = counter-clockwise (left)
+            let next = index + direction;
+            if (next < 0) next = 11;
+            if (next > 11) next = 0;
+            return next;
+        }
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        async function animateStone(fromIndex, toIndex, stoneIsQuan = false) {
+            const from = cellPositions[fromIndex];
+            const to = cellPositions[toIndex];
+            const duration = 250;
+            const startTime = performance.now();
+            
+            return new Promise(resolve => {
+                function animate(currentTime) {
+                    const elapsed = currentTime - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    
+                    // Easing function
+                    const eased = 1 - Math.pow(1 - progress, 3);
+                    
+                    // Calculate arc path
+                    const arcHeight = -50 * Math.sin(progress * Math.PI);
+                    
+                    animatingStone = {
+                        x: from.x + (to.x - from.x) * eased,
+                        y: from.y + (to.y - from.y) * eased + arcHeight,
+                        isQuan: stoneIsQuan
+                    };
+                    
+                    render();
+                    
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        animatingStone = null;
+                        resolve();
+                    }
+                }
+                requestAnimationFrame(animate);
+            });
+        }
+
+        async function distributeStones(startIndex, direction) {
+            let hand = board[startIndex];
+            board[startIndex] = 0;
+            render();
+            
+            let currentIndex = startIndex;
+            
+            while (hand > 0) {
+                currentIndex = nextCell(currentIndex, direction);
+                
+                await animateStone(hand === board[startIndex] + 1 ? startIndex : nextCell(currentIndex, -direction), currentIndex);
+                
+                board[currentIndex]++;
+                hand--;
+                render();
+                await delay(100);
+            }
+            
+            // Check what to do after distribution
+            await handleAfterDistribution(currentIndex, direction);
+        }
+
+        async function handleAfterDistribution(currentIndex, direction) {
+            const nextIndex = nextCell(currentIndex, direction);
+            
+            // If landed on a cell with stones and it's not a Quan, pick up and continue
+            if (board[currentIndex] > 0 && !isQuan[currentIndex]) {
+                await delay(200);
+                await distributeStones(currentIndex, direction);
+                return;
+            }
+            
+            // If cell is empty, check for capture
+            if (board[currentIndex] === 0) {
+                await checkCapture(currentIndex, direction);
+            }
+            
+            // End of turn
+            handleTurnEnd();
+        }
+
+        async function checkCapture(currentIndex, direction) {
+            const nextIndex = nextCell(currentIndex, direction);
+            
+            // Stop conditions
+            if (board[nextIndex] === 0) return; // Two empty cells or empty Quan
+            if (isQuan[nextIndex] && board[nextIndex] === 0) return; // Empty Quan
+            
+            // Capture the stones
+            const captured = board[nextIndex];
+            board[nextIndex] = 0;
+            scores[currentPlayer] += captured;
+            
+            highlightedCells.push(nextIndex);
+            render();
+            
+            // Animate capture
+            const scoreBox = document.getElementById(`score${currentPlayer + 1}Box`);
+            scoreBox.classList.add('capturing');
+            setTimeout(() => scoreBox.classList.remove('capturing'), 500);
+            
+            updateUI();
+            await delay(400);
+            
+            highlightedCells = highlightedCells.filter(c => c !== nextIndex);
+            render();
+            
+            // Check for chain capture
+            const afterNextIndex = nextCell(nextIndex, direction);
+            if (board[afterNextIndex] === 0 && !isQuan[afterNextIndex]) {
+                const afterAfterIndex = nextCell(afterNextIndex, direction);
+                if (board[afterAfterIndex] > 0 && !(isQuan[afterAfterIndex] && board[afterAfterIndex] === 0)) {
+                    await checkCapture(afterNextIndex, direction);
+                }
+            }
+        }
+
+        function handleTurnEnd() {
+            isAnimating = false;
+            
+            // Check for game end
+            if (checkGameEnd()) return;
+            
+            // Switch player
+            currentPlayer = 1 - currentPlayer;
+            
+            // Check if new player needs to borrow
+            checkBorrowing();
+            
+            updateUI();
+            render();
+        }
+
+        function checkBorrowing() {
+            const cells = getPlayerCells(currentPlayer);
+            const hasStones = cells.some(i => board[i] > 0);
+            
+            if (!hasStones) {
+                // Need to borrow
+                if (scores[currentPlayer] >= 5) {
+                    scores[currentPlayer] -= 5;
+                    cells.forEach(i => board[i] = 1);
+                    updateUI();
+                    render();
+                } else {
+                    // Can't borrow, game might end or skip turn
+                    // For simplicity, end game if can't borrow
+                    endGame();
+                }
+            }
+        }
+
+        function checkGameEnd() {
+            // Game ends when both Quan are captured (empty)
+            if (board[5] === 0 && board[11] === 0) {
+                endGame();
+                return true;
+            }
+            return false;
+        }
+
+        function endGame() {
+            // Each player collects remaining stones on their side
+            const p1Cells = getPlayerCells(0);
+            const p2Cells = getPlayerCells(1);
+            
+            p1Cells.forEach(i => {
+                scores[0] += board[i];
+                board[i] = 0;
+            });
+            
+            p2Cells.forEach(i => {
+                scores[1] += board[i];
+                board[i] = 0;
+            });
+            
+            // Add any remaining Quan stones
+            scores[0] += Math.floor(board[5] / 2);
+            scores[1] += Math.floor(board[11] / 2);
+            board[5] = 0;
+            board[11] = 0;
+            
+            updateUI();
+            render();
+            showGameOver();
+        }
+
+        function showGameOver() {
+            const modal = document.getElementById('gameOverModal');
+            const title = document.getElementById('gameOverTitle');
+            const score1 = document.getElementById('finalScore1Value');
+            const score2 = document.getElementById('finalScore2Value');
+            const box1 = document.getElementById('finalScore1');
+            const box2 = document.getElementById('finalScore2');
+            
+            score1.textContent = scores[0];
+            score2.textContent = scores[1];
+            
+            box1.classList.remove('winner');
+            box2.classList.remove('winner');
+            
+            if (scores[0] > scores[1]) {
+                title.textContent = '🏆 Người chơi 1 thắng!';
+                box1.classList.add('winner');
+            } else if (scores[1] > scores[0]) {
+                title.textContent = '🏆 Người chơi 2 thắng!';
+                box2.classList.add('winner');
+            } else {
+                title.textContent = '🤝 Hòa!';
+            }
+            
+            modal.classList.add('show');
+        }
+
+        // ============ UI UPDATES ============
+        function updateUI() {
+            document.getElementById('score1').textContent = scores[0];
+            document.getElementById('score2').textContent = scores[1];
+            document.getElementById('turnIndicator').textContent = `Lượt: Người chơi ${currentPlayer + 1}`;
+            
+            document.getElementById('score1Box').classList.toggle('active', currentPlayer === 0);
+            document.getElementById('score2Box').classList.toggle('active', currentPlayer === 1);
+        }
+
+        // ============ EVENT HANDLERS ============
+        canvas.addEventListener('click', (e) => {
+            if (isAnimating) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+            
+            // Find clicked cell
+            for (let i = 0; i < cellPositions.length; i++) {
+                if (isQuan[i]) continue; // Can't select Quan
+                if (!isPlayerCell(i, currentPlayer)) continue; // Not player's cell
+                if (board[i] === 0) continue; // Empty cell
+                
+                const cell = cellPositions[i];
+                const dx = x - cell.x;
+                const dy = y - cell.y;
+                
+                if (Math.abs(dx) < cell.width / 2 && Math.abs(dy) < cell.height / 2) {
+                    selectedCell = i;
+                    showDirectionOverlay();
+                    return;
+                }
+            }
+        });
+
+        function showDirectionOverlay() {
+            document.getElementById('directionOverlay').classList.add('show');
+        }
+
+        function hideDirectionOverlay() {
+            document.getElementById('directionOverlay').classList.remove('show');
+        }
+
+        document.getElementById('leftBtn').addEventListener('click', () => {
+            hideDirectionOverlay();
+            startMove(-1);
+        });
+
+        document.getElementById('rightBtn').addEventListener('click', () => {
+            hideDirectionOverlay();
+            startMove(1);
+        });
+
+        function startMove(direction) {
+            if (selectedCell < 0 || isAnimating) return;
+            isAnimating = true;
+            distributeStones(selectedCell, direction);
+            selectedCell = -1;
+        }
+
+        document.getElementById('newGameBtn').addEventListener('click', () => {
+            document.getElementById('gameOverModal').classList.remove('show');
+            initGame();
+        });
+
+        document.getElementById('playAgainBtn').addEventListener('click', () => {
+            document.getElementById('gameOverModal').classList.remove('show');
+            initGame();
+        });
+
+        document.getElementById('rulesBtn').addEventListener('click', () => {
+            document.getElementById('rulesModal').classList.add('show');
+        });
+
+        document.getElementById('closeRules').addEventListener('click', () => {
+            document.getElementById('rulesModal').classList.remove('show');
+        });
+
+        document.getElementById('rulesModal').addEventListener('click', (e) => {
+            if (e.target.id === 'rulesModal') {
+                document.getElementById('rulesModal').classList.remove('show');
+            }
+        });
+
+        document.getElementById('gameOverModal').addEventListener('click', (e) => {
+            if (e.target.id === 'gameOverModal') {
+                document.getElementById('gameOverModal').classList.remove('show');
+            }
+        });
+
+        // Handle keyboard
+        document.addEventListener('keydown', (e) => {
+            if (selectedCell >= 0) {
+                if (e.key === 'ArrowLeft') {
+                    hideDirectionOverlay();
+                    startMove(-1);
+                } else if (e.key === 'ArrowRight') {
+                    hideDirectionOverlay();
+                    startMove(1);
+                } else if (e.key === 'Escape') {
+                    hideDirectionOverlay();
+                    selectedCell = -1;
+                }
+            }
+        });
+
+        // Handle window resize
+        function handleResize() {
+            const container = document.querySelector('.game-container');
+            const maxWidth = Math.min(window.innerWidth - 40, 800);
+            const scale = maxWidth / 800;
+            
+            canvas.style.width = `${800 * scale}px`;
+            canvas.style.height = `${350 * scale}px`;
+        }
+
+        window.addEventListener('resize', handleResize);
+        handleResize();
+
+        // Start game
+        initGame();
+    </script>
+</body>
+</html>
